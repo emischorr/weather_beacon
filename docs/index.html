@@ -204,7 +204,7 @@
       <span class="chip"><b>SENSOR</b> BME280 (I²C)</span>
       <span class="chip"><b>POWER</b> 2× AAA Li, regulator path</span>
       <span class="chip"><b>RADIO</b> BLE adv · BTHome v2</span>
-      <span class="chip"><b>STACK</b> Arduino (Adafruit nRF52)</span>
+      <span class="chip"><b>STACK</b> Arduino (Adafruit nRF52) · PlatformIO</span>
     </div>
   </div>
 </header>
@@ -427,27 +427,77 @@
 
   <!-- ============ 05 FIRMWARE ============ -->
   <section>
-    <h2><span class="num">05</span>Firmware — Getting Started</h2>
-    <p class="lede">A complete Arduino starter sketch, plus the toolchain setup around it.</p>
+    <h2><span class="num">05</span>Firmware &amp; Dev Setup</h2>
+    <p class="lede">A PlatformIO project in this repo. The source lives next to this document, not in it.</p>
+
+    <h3>Repository layout</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Path</th><th>Contents</th></tr></thead>
+        <tbody>
+          <tr><td class="mono"><a href="https://github.com/emischorr/weather_beacon/blob/main/src/main.cpp">src/main.cpp</a></td><td>The complete firmware, and the source of truth for everything in this reference.</td></tr>
+          <tr><td class="mono"><a href="https://github.com/emischorr/weather_beacon/blob/main/platformio.ini">platformio.ini</a></td><td>Platform, board, library dependencies and the <code class="inline">release</code> / <code class="inline">debug</code> build environments.</td></tr>
+          <tr><td class="mono">docs/</td><td>This reference.</td></tr>
+          <tr><td class="mono">.vscode/</td><td>Recommended extensions (PlatformIO IDE). The generated IntelliSense and launch configs are git-ignored.</td></tr>
+        </tbody>
+      </table>
+    </div>
 
     <h3>Toolchain</h3>
     <ul class="tight">
-      <li><strong>Board support:</strong> install the <em>Adafruit nRF52</em> core, then select <code class="inline">Seeed XIAO nRF52840</code> (the Bluefruit-based core, <em>not</em> the mbed core — Bluefruit gives the low-power advertising API used here).</li>
-      <li><strong>Libraries</strong> (Library Manager): <code class="inline">Adafruit BME280 Library</code>, <code class="inline">Adafruit Unified Sensor</code>, <code class="inline">Adafruit SPIFlash</code> (for QSPI deep-power-down).</li>
-      <li><strong>Upload:</strong> double-tap RESET to enter the UF2 bootloader if the port doesn't appear. Batteries out while USB is connected.</li>
+      <li><strong>Editor:</strong> VS Code with the <em>PlatformIO IDE</em> extension (recommended in <code class="inline">.vscode/extensions.json</code>). The <code class="inline">pio</code> CLI on its own works too.</li>
+      <li><strong>Platform / board:</strong> Seeed's <code class="inline">platform-seeedboards</code> (pulled from GitHub), board <code class="inline">seeed-xiao-afruitnrf52-nrf52840</code>, framework <code class="inline">arduino</code>. This is the Adafruit nRF52 / Bluefruit-based core, <em>not</em> the mbed core. Bluefruit provides the low-power advertising API used here.</li>
+      <li><strong>Libraries:</strong> listed in <code class="inline">lib_deps</code> (<code class="inline">Adafruit BME280 Library</code>, <code class="inline">Adafruit Unified Sensor</code>, <code class="inline">Adafruit SPIFlash</code>). PlatformIO fetches them on the first build, so there's nothing to install by hand.</li>
+      <li><strong>Upload:</strong> if the port doesn't show up, double-tap RESET to enter the UF2 bootloader. Remove the batteries while USB is connected.</li>
     </ul>
+
+    <h3>Build environments</h3>
+    <p>A shared <code class="inline">[env]</code> block holds the common settings. Two environments sit on top of it, and the only difference between them is the <code class="inline">DEBUG</code> define:</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Setting</th><th><span class="mono">release</span></th><th><span class="mono">debug</span> (<span class="mono">-DDEBUG</span>)</th></tr></thead>
+        <tbody>
+          <tr><td>Report interval</td><td class="mono">15 min</td><td class="mono">10 s</td></tr>
+          <tr><td>Advertising burst</td><td class="mono">300 ms</td><td class="mono">1000 ms (easier to catch on a phone)</td></tr>
+          <tr><td>Serial output</td><td>none</td><td>Boot banner (waits up to 3 s for a monitor) · BME280 init <span class="mono">OK</span>/<span class="mono">FAILED</span> · BLE MAC address · one line per cycle with T, RH, P, Vbat and %</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card mono" style="font-size:.88rem">
+      <div>pio run -e release -t upload &nbsp;&nbsp;<span style="color:var(--ink-soft)"># deployment build</span></div>
+      <div>pio run -e debug -t upload &nbsp;&nbsp;&nbsp;<span style="color:var(--ink-soft)"># bench build with Serial logging</span></div>
+      <div>pio device monitor &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--ink-soft)"># 115200 baud, from monitor_speed</span></div>
+    </div>
+    <p>In VS Code, the same actions are available from the PlatformIO toolbar once you pick the environment in the status bar.</p>
+    <div class="callout">
+      <span class="tag">Debug build is bench-only</span>
+      <p>The <code class="inline">debug</code> environment wakes every 10 s and advertises for 1 s each time. That's a far higher duty cycle than the battery figures in §04 assume, and it keeps the USB/Serial stack active. Always flash <code class="inline">release</code> before the device goes onto batteries.</p>
+    </div>
+
+    <h3>Code map — <a href="https://github.com/emischorr/weather_beacon/blob/main/src/main.cpp">src/main.cpp</a></h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Symbol</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">REPORT_INTERVAL_MS · ADV_BURST_MS</td><td>Cycle period and broadcast window. Set per environment through <code class="inline">#ifdef DEBUG</code>.</td></tr>
+          <tr><td class="mono">BME280_I2C_ADDR</td><td><span class="mono">0x76</span> (generic breakouts) or <span class="mono">0x77</span> (Adafruit).</td></tr>
+          <tr><td class="mono">TX_POWER_DBM</td><td>Radio TX power, 0 dBm by default.</td></tr>
+          <tr><td class="mono">VBAT_FULL_MV · VBAT_EMPTY_MV · VBAT_DIVIDER</td><td>Battery % mapping and the onboard divider ratio (calibrate this one).</td></tr>
+          <tr><td class="mono">readBatteryMillivolts()</td><td>Connects the VBAT divider, averages 8 ADC samples against the 2.4 V reference, then disconnects the divider.</td></tr>
+          <tr><td class="mono">batteryPercent()</td><td>Linear mV → % clamp between the empty and full thresholds.</td></tr>
+          <tr><td class="mono">buildAndBroadcast()</td><td>Forced-mode BME280 read, battery read, (debug) Serial log, packs the BTHome v2 service data (§06), then advertises for <code class="inline">ADV_BURST_MS</code> and stops.</td></tr>
+          <tr><td class="mono">setup()</td><td>LEDs off, QSPI flash deep power-down, divider disconnected, I²C remapped to D9/D10, BME280 in forced mode, Bluefruit set up as a beacon. In debug it also prints the init result and the BLE MAC.</td></tr>
+          <tr><td class="mono">loop()</td><td>One broadcast, then <code class="inline">delay()</code> for the rest of the interval. The tickless FreeRTOS idle puts the SoC into System-ON sleep.</td></tr>
+        </tbody>
+      </table>
+    </div>
 
     <h3>The two optimizations that matter</h3>
     <ol class="tight">
       <li><strong>QSPI flash → deep power-down</strong> (<code class="inline">flashTransport.runCommand(0xB9)</code>). This alone takes you from ~20 µA toward ~5 µA.</li>
-      <li><strong>Keep the VBAT divider disconnected</strong> (drive <code class="inline">VBAT_ENABLE</code> HIGH; only pull it LOW for the few ms you read battery voltage). Saves the divider's ~2.3 µA.</li>
+      <li><strong>Keep the VBAT divider disconnected</strong> (drive <code class="inline">VBAT_ENABLE</code> HIGH and only pull it LOW for the few ms of the battery read). Saves the divider's ~2.3 µA.</li>
     </ol>
-
-    <div class="codehead">
-      <span class="fname">xiao_bme280_bthome.ino</span>
-      <button class="copybtn" id="copy">COPY</button>
-    </div>
-    <pre class="code"><code id="fw-code"></code></pre>
+    <p>Two smaller items: all three onboard LEDs are driven HIGH (off, since they're active-LOW), and <code class="inline">Bluefruit.autoConnLed(false)</code> stops Bluefruit from blinking the blue LED during every advertising burst.</p>
 
     <div class="callout info">
       <span class="tag">Notes &amp; calibration</span>
@@ -461,11 +511,12 @@
   <section>
     <h2><span class="num">06</span>BTHome v2 Payload</h2>
     <p class="lede">Exactly what goes on the air — service UUID 0xFCD2, unencrypted.</p>
-    <p>The advertisement carries one Service-Data field (AD type <code class="inline">0x16</code>) with 16-bit UUID <code class="inline">0xFCD2</code>. The first byte (<code class="inline">0x40</code>) flags BTHome v2, unencrypted, non-trigger. Then come measurement objects in ascending ID order, each value little-endian.</p>
+    <p>The advertisement carries one Service-Data field (AD type <code class="inline">0x16</code>) with 16-bit UUID <code class="inline">0xFCD2</code>. The first byte (<code class="inline">0x40</code>) flags BTHome v2, unencrypted, non-trigger. The objects follow in ascending ID order, each value little-endian. First is a <strong>packet id</strong> that increases by one every cycle (wrapping at 255), which lets receivers spot and drop the repeated copies of one burst. The measurements come after it.</p>
     <div class="tbl-wrap">
       <table>
         <thead><tr><th>Object ID</th><th>Measurement</th><th>Type</th><th>Factor / Unit</th></tr></thead>
         <tbody>
+          <tr><td class="mono">0x00</td><td>Packet ID</td><td class="mono">uint8</td><td>1 · —</td></tr>
           <tr><td class="mono">0x01</td><td>Battery</td><td class="mono">uint8</td><td>1 · %</td></tr>
           <tr><td class="mono">0x02</td><td>Temperature</td><td class="mono">sint16</td><td>0.01 · °C</td></tr>
           <tr><td class="mono">0x03</td><td>Humidity</td><td class="mono">uint16</td><td>0.01 · %</td></tr>
@@ -473,7 +524,7 @@
           <tr><td class="mono">0x0C</td><td>Voltage</td><td class="mono">uint16</td><td>0.001 · V</td></tr>
         </tbody>
       </table>
-      <caption>Total advertisement ≈ 23 bytes incl. flags — comfortably under the 31-byte legacy advertising limit.</caption>
+      <caption>Service data = 20 bytes (UUID 2 + info 1 + objects 17). Total advertisement = 25 bytes including the flags and AD header, which leaves 6 bytes of headroom under the 31-byte legacy advertising limit.</caption>
     </div>
   </section>
 
@@ -484,7 +535,8 @@
     <h2><span class="num">07</span>Commissioning &amp; OpenMQTTGateway</h2>
     <p class="lede">From first power-up to data in your broker.</p>
     <ol class="tight">
-      <li><strong>Flash</strong> the sketch (batteries removed). Open the Serial Monitor only if you added debug prints — leave them out of the deployed build to keep wake time short.</li>
+      <li><strong>Bench test</strong> with batteries removed: flash the <code class="inline">debug</code> env and open <code class="inline">pio device monitor</code>. Check that the BME280 reports <span class="mono">OK</span> (if it says <span class="mono">FAILED</span>, check the wiring and whether the address is 0x76 or 0x77) and that the readings look plausible. Write down the printed <strong>BLE addr</strong>, because it's the <code class="inline">&lt;MAC&gt;</code> in the gateway topic.</li>
+      <li><strong>Flash</strong> the <code class="inline">release</code> env for deployment: no Serial, a 15-min interval and 300 ms bursts.</li>
       <li><strong>Insert the lithium AAAs.</strong> The device begins its wake/advertise/sleep cycle immediately.</li>
       <li><strong>OpenMQTTGateway</strong> with the BLE/BTHome decoder enabled will see the 0xFCD2 beacon and publish to a topic such as <code class="inline">home/OMG/BTtoMQTT/&lt;MAC&gt;</code>. No pairing or whitelist is needed for an unencrypted BTHome beacon.</li>
       <li><strong>Home Assistant</strong> picks up the readings via the MQTT integration (and can auto-discover BTHome through OMG). Confirm temperature, humidity, pressure, battery % and voltage all arrive.</li>
@@ -495,10 +547,10 @@
     <ul class="tight">
       <li>☐ QSPI flash deep-power-down sent in <code class="inline">setup()</code></li>
       <li>☐ <code class="inline">VBAT_ENABLE</code> held HIGH except during the battery read</li>
-      <li>☐ All three onboard LEDs driven HIGH (off)</li>
+      <li>☐ All three onboard LEDs driven HIGH (off), and Bluefruit's LED blink disabled (<code class="inline">autoConnLed(false)</code>)</li>
       <li>☐ BME280 in <strong>forced</strong> mode (sleeps between reads)</li>
       <li>☐ Advertising burst short (≈ 300 ms) then explicitly stopped</li>
-      <li>☐ No <code class="inline">Serial</code> / debug prints in the deployed build</li>
+      <li>☐ Deployed with the <code class="inline">release</code> env (no <code class="inline">DEBUG</code>, no Serial)</li>
     </ul>
   </section>
 
@@ -541,7 +593,7 @@
     </div>
 
     <div class="codehead">
-      <span class="fname">upgrade_bh1750.ino — drop-in additions</span>
+      <span class="fname">additions to src/main.cpp — BH1750</span>
       <button class="copybtn" id="copy-bh">COPY</button>
     </div>
     <pre class="code"><code id="bh-code"></code></pre>
@@ -612,7 +664,7 @@
     </div>
 
     <div class="codehead">
-      <span class="fname">upgrade_soil.ino — drop-in additions</span>
+      <span class="fname">additions to src/main.cpp — soil moisture</span>
       <button class="copybtn" id="copy-soil">COPY</button>
     </div>
     <pre class="code"><code id="soil-code"></code></pre>
@@ -624,7 +676,12 @@
 
     <div class="callout info">
       <span class="tag">Mixing upgrades → a fourth build</span>
-      <p>The two upgrades don't collide: light lives on I²C (<code class="inline">D9/D10</code>), soil on an analog pin (<code class="inline">A0</code>) plus a power pin (<code class="inline">D1</code>). All three variants — base, +light, +soil — share one firmware base, so you can also fit both at once for a fully-loaded node.</p>
+      <p>The two upgrades don't collide: light lives on I²C (<code class="inline">D9/D10</code>), soil on an analog pin (<code class="inline">A0</code>) plus a power pin (<code class="inline">D1</code>). All three variants (base, +light, +soil) share one firmware base, so you can also fit both upgrades at once for a fully-loaded node.</p>
+    </div>
+
+    <div class="callout">
+      <span class="tag">Fully-loaded build — watch the 31-byte limit</span>
+      <p>The base payload already uses 20 bytes of service data, packet id included. Light adds 4 and soil adds 3, for 27 bytes, which puts the whole advertisement at <strong>32 bytes, one byte over</strong> the 31-byte legacy limit. The simplest fix is to drop object <code class="inline">0x01</code> (battery %). Home Assistant can derive it from the voltage object <code class="inline">0x0C</code>, which is still sent. That brings the total back to 30 bytes. Either upgrade on its own fits (29 / 28 bytes), but you'll need to enlarge <code class="inline">sd[]</code>.</p>
     </div>
   </section>
 
@@ -632,148 +689,16 @@
 
   <footer>
     <div>XIAO nRF52840 + BME280 · BTHome v2 · OpenMQTTGateway → MQTT</div>
+    <div style="margin-top:6px">The firmware source of truth is <a href="https://github.com/emischorr/weather_beacon/blob/main/src/main.cpp">src/main.cpp</a>. If this document and the code disagree, the code wins. · <a href="https://github.com/emischorr/weather_beacon">View on GitHub</a></div>
     <div style="margin-top:6px">Battery figures are first-order estimates; measure your own sleep current with a µA meter (or a current-ranging tool) to confirm. Sleep-current behaviour of the XIAO is well documented by the Seeed wiki and community measurements (~5 µA tuned, ~20 µA untuned).</div>
   </footer>
 
 </div>
 
-<!-- firmware stored as raw text, injected to avoid HTML-escaping pitfalls -->
-<script type="text/plain" id="fw-src">
-/*
- * XIAO nRF52840 + BME280  ->  BTHome v2 BLE beacon
- * Wake -> read sensor -> broadcast unencrypted BTHome v2 adv -> sleep.
- * Target: OpenMQTTGateway -> MQTT -> Home Assistant.
- *
- * Board : Seeed XIAO nRF52840  (Adafruit nRF52 / Bluefruit core)
- * Sensor: BME280 over I2C  (SDA = D9/P1.14, SCL = D10/P1.15)
- * Power : 2x AAA lithium on the BAT+/BAT- pads
- *
- * Libraries: Adafruit BME280, Adafruit Unified Sensor, Adafruit SPIFlash
- */
-
-#include <bluefruit.h>
-#include <Wire.h>
-#include <Adafruit_Sensor.h>
-#include <Adafruit_BME280.h>
-#include <Adafruit_SPIFlash.h>
-
-// ---------------- USER CONFIG ----------------
-#define REPORT_INTERVAL_MS   (15UL * 60UL * 1000UL)   // 15 minutes
-#define ADV_BURST_MS         300         // broadcast window per cycle
-#define BME280_I2C_ADDR      0x76        // 0x76 (generic) or 0x77 (Adafruit)
-#define TX_POWER_DBM         0           // 0 dBm; raise a step only if range is marginal
-
-// Battery mapping (2x lithium AAA: ~3.0 V full in use, ~2.2 V empty)
-#define VBAT_FULL_MV         3000
-#define VBAT_EMPTY_MV        2200
-#define VBAT_DIVIDER         2.961f      // XIAO onboard divider ratio - CALIBRATE
-// ---------------------------------------------
-
-Adafruit_BME280 bme;
-Adafruit_FlashTransport_QSPI flashTransport;
-
-uint16_t readBatteryMillivolts() {
-  // Connect the divider only for the read, then disconnect to save ~2.3 uA.
-  pinMode(VBAT_ENABLE, OUTPUT);
-  digitalWrite(VBAT_ENABLE, LOW);      // LOW = divider engaged
-  delay(5);
-  analogReadResolution(12);
-  analogReference(AR_INTERNAL_2_4);    // 2.4 V full-scale reference
-  uint32_t raw = 0;
-  for (int i = 0; i < 8; i++) { raw += analogRead(PIN_VBAT); delay(1); }
-  raw /= 8;
-  digitalWrite(VBAT_ENABLE, HIGH);     // HIGH = divider disconnected
-  float adc_mv = (raw * 2400.0f) / 4096.0f;
-  return (uint16_t)(adc_mv * VBAT_DIVIDER);
-}
-
-uint8_t batteryPercent(uint16_t mv) {
-  if (mv >= VBAT_FULL_MV)  return 100;
-  if (mv <= VBAT_EMPTY_MV) return 0;
-  return (uint8_t)(100UL * (mv - VBAT_EMPTY_MV) / (VBAT_FULL_MV - VBAT_EMPTY_MV));
-}
-
-void buildAndBroadcast() {
-  // ---- read sensor (forced mode: sensor sleeps between reads) ----
-  bme.takeForcedMeasurement();
-  float tC   = bme.readTemperature();          // degC
-  float rh   = bme.readHumidity();             // %
-  float pHpa = bme.readPressure() / 100.0f;    // hPa
-
-  uint16_t vbat = readBatteryMillivolts();
-  uint8_t  pct  = batteryPercent(vbat);
-
-  int16_t  t = (int16_t) lround(tC   * 100.0);   // 0x02  sint16 x0.01
-  uint16_t h = (uint16_t)lround(rh   * 100.0);   // 0x03  uint16 x0.01
-  uint32_t p = (uint32_t)lround(pHpa * 100.0);   // 0x04  uint24 x0.01
-
-  // ---- BTHome v2 service data (UUID 0xFCD2, unencrypted) ----
-  uint8_t sd[20];
-  uint8_t n = 0;
-  sd[n++] = 0xD2; sd[n++] = 0xFC;                       // UUID 0xFCD2 (LE)
-  sd[n++] = 0x40;                                       // BTHome v2, no encryption
-  sd[n++] = 0x01; sd[n++] = pct;                        // battery %
-  sd[n++] = 0x02; sd[n++] = t & 0xFF; sd[n++] = (t >> 8) & 0xFF;        // temp
-  sd[n++] = 0x03; sd[n++] = h & 0xFF; sd[n++] = (h >> 8) & 0xFF;        // humidity
-  sd[n++] = 0x04; sd[n++] = p & 0xFF; sd[n++] = (p >> 8) & 0xFF;
-                  sd[n++] = (p >> 16) & 0xFF;                           // pressure
-  sd[n++] = 0x0C; sd[n++] = vbat & 0xFF; sd[n++] = (vbat >> 8) & 0xFF;  // voltage
-
-  // ---- advertise a short burst, then stop ----
-  Bluefruit.Advertising.stop();
-  Bluefruit.Advertising.clearData();
-  Bluefruit.Advertising.addFlags(BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE);
-  Bluefruit.Advertising.addData(0x16 /* Service Data, 16-bit UUID */, sd, n);
-  Bluefruit.Advertising.setInterval(160, 160);   // 100 ms (units of 0.625 ms)
-  Bluefruit.Advertising.start(0);                // 0 = run until we stop it
-  delay(ADV_BURST_MS);
-  Bluefruit.Advertising.stop();
-}
-
-void setup() {
-  // On-board LEDs are active-LOW: drive HIGH = off.
-  pinMode(LED_RED,   OUTPUT); digitalWrite(LED_RED,   HIGH);
-  pinMode(LED_GREEN, OUTPUT); digitalWrite(LED_GREEN, HIGH);
-  pinMode(LED_BLUE,  OUTPUT); digitalWrite(LED_BLUE,  HIGH);
-
-  // POWER STEP 1: put the QSPI flash into deep power-down (~ -15 uA).
-  flashTransport.begin();
-  flashTransport.runCommand(0xB9);   // 0xB9 = Deep Power-Down
-  delay(1);
-  flashTransport.end();
-
-  // POWER STEP 2: keep the battery-voltage divider disconnected by default.
-  pinMode(VBAT_ENABLE, OUTPUT);
-  digitalWrite(VBAT_ENABLE, HIGH);
-
-  // I2C + BME280 in forced mode, no oversampling overkill.
-  // nRF52840 routes I2C to any GPIO; default is D4/D5, so remap to D9/D10 first.
-  Wire.setPins(D9, D10);    // SDA = D9 (P1.14), SCL = D10 (P1.15) -- before begin()
-  Wire.begin();
-  bme.begin(BME280_I2C_ADDR);
-  bme.setSampling(Adafruit_BME280::MODE_FORCED,
-                  Adafruit_BME280::SAMPLING_X1,   // temperature
-                  Adafruit_BME280::SAMPLING_X1,   // pressure
-                  Adafruit_BME280::SAMPLING_X1,   // humidity
-                  Adafruit_BME280::FILTER_OFF);
-
-  // BLE: beacon only, never restart advertising on disconnect.
-  Bluefruit.begin();
-  Bluefruit.setTxPower(TX_POWER_DBM);
-  Bluefruit.setName("XIAO-BME280");
-  Bluefruit.Advertising.restartOnDisconnect(false);
-}
-
-void loop() {
-  buildAndBroadcast();
-  // The Adafruit core's tickless FreeRTOS idle drops the SoC into
-  // low-power System-ON sleep during this long delay (~5 uA when tuned).
-  delay(REPORT_INTERVAL_MS - ADV_BURST_MS);
-}
-</script>
-
+<!-- upgrade snippets stored as raw text, injected to avoid HTML-escaping pitfalls -->
 <script type="text/plain" id="bh-src">
 // ===== UPGRADE A: BH1750 ambient-light sensor (shares the I2C bus) =====
+// platformio.ini -> add to lib_deps:   claws/BH1750
 #include <BH1750.h>
 BH1750 lightMeter;            // I2C 0x23 (ADDR->GND). BME280 stays 0x76/0x77.
 
@@ -793,7 +718,7 @@ float readLux() {
 //   uint32_t lx = (uint32_t)lround(readLux() * 100.0);   // 0x05 uint24 x0.01 lux
 //   sd[n++] = 0x05; sd[n++] = lx & 0xFF;
 //   sd[n++] = (lx >> 8) & 0xFF; sd[n++] = (lx >> 16) & 0xFF;
-// (Bump the sd[] array size to fit the extra object.)
+// (Base payload uses 20 of sd[22]; this adds 4 -> enlarge sd[] to at least 24.)
 //
 // Downstream, your broker-side summing software applies the "sunny" threshold:
 // treat each 15-min sample as sunny / not-sunny, then sum to sun-hours per day.
@@ -831,7 +756,8 @@ uint8_t readSoilPercent() {
 //   uint16_t soil = (uint16_t)lround(readSoilPercent() * 100.0);  // 0x14 uint16 x0.01 %
 //   sd[n++] = 0x14; sd[n++] = soil & 0xFF; sd[n++] = (soil >> 8) & 0xFF;
 // NOTE: readBatteryMillivolts() sets AR_INTERNAL_2_4, so it is fine that this
-// function sets its own reference each call. Enlarge sd[] to fit the new object.
+// function sets its own reference each call. This adds 3 bytes -> enlarge sd[]
+// to at least 23 (27 with the light upgrade too; see the 31-byte note).
 </script>
 
 <script>
@@ -847,7 +773,6 @@ uint8_t readSoilPercent() {
       });
     });
   }
-  inject('fw-src', 'fw-code', 'copy');
   inject('bh-src', 'bh-code', 'copy-bh');
   inject('soil-src', 'soil-code', 'copy-soil');
 </script>
