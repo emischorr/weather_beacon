@@ -60,3 +60,7 @@ All settings are in the `USER CONFIG` block at the top of [`src/main.cpp`](src/m
 - `VBAT_DIVIDER`: calibrate once against a multimeter
 
 For the payload format, power budget and the OpenMQTTGateway setup, see the [project reference](https://emischorr.github.io/weather_beacon/).
+
+## License
+
+[MIT](LICENSE). The fonts bundled in `docs/fonts/` are under the [SIL Open Font License 1.1](docs/fonts/OFL.txt).
