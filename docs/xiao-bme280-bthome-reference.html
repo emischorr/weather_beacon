@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XIAO nRF52840 + BME280 — BTHome v2 Sensor · Project Reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f4f1e8;
+    --paper-2:#efe9db;
+    --ink:#1c1a17;
+    --ink-soft:#544f45;
+    --accent:#c2451d;      /* rust / vermilion */
+    --accent-2:#1f6f5c;    /* circuit teal */
+    --rule:#d8d1bf;
+    --rule-strong:#bcb29a;
+    --code-bg:#1b1916;
+    --code-fg:#e7e1d2;
+    --warn-bg:#fbf0e9;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    background-color:var(--paper);
+    background-image:
+      linear-gradient(rgba(120,108,86,0.14) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(120,108,86,0.14) 1px, transparent 1px);
+    background-size:26px 26px;
+    background-position:-1px -1px;
+    color:var(--ink);
+    font-family:"IBM Plex Sans",-apple-system,sans-serif;
+    font-size:16px;
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{
+    max-width:880px;
+    margin:0 auto;
+    padding:0 24px 120px;
+  }
+  /* ---------- Masthead ---------- */
+  header.mast{
+    margin:0 -24px 56px;
+    padding:64px 24px 40px;
+    background:var(--ink);
+    color:var(--paper);
+    border-bottom:4px solid var(--accent);
+  }
+  header.mast .inner{max-width:880px;margin:0 auto}
+  .kicker{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:12px;letter-spacing:.28em;text-transform:uppercase;
+    color:var(--accent);
+    display:flex;gap:14px;align-items:center;margin:0 0 22px;
+  }
+  .kicker::after{content:"";flex:1;height:1px;background:#3a352d}
+  h1{
+    font-family:"Chakra Petch",sans-serif;
+    font-weight:700;font-size:clamp(2.1rem,6vw,3.4rem);
+    line-height:1.02;margin:0 0 18px;letter-spacing:-.01em;
+  }
+  h1 .lo{color:#9a948a;font-weight:600}
+  .sub{font-size:1.06rem;color:#cfc8ba;max-width:60ch;margin:0}
+  .chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:30px}
+  .chip{
+    font-family:"IBM Plex Mono",monospace;font-size:12px;
+    border:1px solid #3a352d;border-radius:2px;
+    padding:7px 11px;color:var(--paper);background:#26221c;
+  }
+  .chip b{color:var(--accent);font-weight:600}
+  /* ---------- Sections ---------- */
+  section{margin:0 0 60px;animation:rise .6s ease both}
+  @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  h2{
+    font-family:"Chakra Petch",sans-serif;font-weight:700;
+    font-size:1.7rem;letter-spacing:-.01em;
+    margin:0 0 4px;padding-top:14px;
+    display:flex;align-items:baseline;gap:14px;
+  }
+  h2 .num{
+    font-family:"IBM Plex Mono",monospace;font-size:.78rem;font-weight:600;
+    color:var(--accent);letter-spacing:.1em;
+    border:1px solid var(--accent);border-radius:2px;padding:3px 7px;
+    transform:translateY(-3px);
+  }
+  .opt{font-family:"IBM Plex Mono",monospace;font-size:.62rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-2);border:1px solid var(--accent-2);border-radius:2px;padding:3px 8px;transform:translateY(-4px);white-space:nowrap}
+  h2 + .lede{color:var(--ink-soft);margin:.2rem 0 1.4rem;font-size:1.02rem}
+  h3{
+    font-family:"Chakra Petch",sans-serif;font-weight:600;font-size:1.12rem;
+    margin:30px 0 10px;letter-spacing:-.005em;
+  }
+  p{margin:0 0 16px}
+  a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(194,69,29,.35)}
+  a:hover{border-bottom-color:var(--accent)}
+  strong{font-weight:600}
+  .hr{height:1px;background:var(--rule-strong);border:0;margin:54px 0}
+  /* ---------- Cards / callouts ---------- */
+  .card{
+    background:var(--paper-2);
+    border:1px solid var(--rule-strong);
+    border-radius:3px;padding:22px 24px;margin:22px 0;
+  }
+  .callout{
+    border-left:4px solid var(--accent);
+    background:var(--warn-bg);
+    padding:16px 20px;margin:22px 0;border-radius:0 3px 3px 0;
+  }
+  .callout.info{border-left-color:var(--accent-2);background:#eef4f2}
+  .callout .tag{
+    font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;
+    letter-spacing:.16em;text-transform:uppercase;color:var(--accent);
+    display:block;margin-bottom:6px;
+  }
+  .callout.info .tag{color:var(--accent-2)}
+  .callout p:last-child{margin-bottom:0}
+  /* ---------- Flow diagram ---------- */
+  .flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:0;margin:26px 0}
+  .node{
+    flex:1;min-width:120px;text-align:center;
+    border:1px solid var(--rule-strong);background:var(--paper-2);
+    padding:14px 10px;border-radius:3px;
+  }
+  .node .n-t{font-family:"Chakra Petch",sans-serif;font-weight:600;font-size:.95rem}
+  .node .n-s{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-soft);margin-top:3px}
+  .arrow{
+    align-self:center;flex:0 0 30px;text-align:center;color:var(--accent);
+    font-family:"IBM Plex Mono",monospace;font-size:18px;font-weight:600;
+  }
+  /* ---------- Tables ---------- */
+  .tbl-wrap{overflow-x:auto;margin:20px 0;border:1px solid var(--rule-strong);border-radius:3px}
+  table{border-collapse:collapse;width:100%;font-size:.92rem;background:var(--paper-2)}
+  th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--rule)}
+  thead th{
+    background:var(--ink);color:var(--paper);
+    font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;
+    letter-spacing:.08em;text-transform:uppercase;border-bottom:none;
+  }
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:nth-child(even){background:rgba(0,0,0,.018)}
+  td.mono,th.mono,.mono{font-family:"IBM Plex Mono",monospace}
+  td .pin{font-family:"IBM Plex Mono",monospace;font-weight:600;color:var(--accent)}
+  .hl td{background:rgba(31,111,92,.10)}
+  caption{caption-side:bottom;font-size:.8rem;color:var(--ink-soft);padding-top:10px;text-align:left}
+  /* ---------- Code ---------- */
+  .codehead{
+    display:flex;justify-content:space-between;align-items:center;
+    background:#26221c;color:var(--code-fg);
+    font-family:"IBM Plex Mono",monospace;font-size:12px;
+    padding:9px 14px;border-radius:3px 3px 0 0;border:1px solid #000;border-bottom:none;
+  }
+  .codehead .fname{color:#bdb6a6}
+  .copybtn{
+    background:var(--accent);color:#fff;border:0;border-radius:2px;
+    font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;
+    padding:5px 12px;cursor:pointer;letter-spacing:.05em;
+  }
+  .copybtn:active{transform:translateY(1px)}
+  pre.code{
+    margin:0 0 22px;background:var(--code-bg);color:var(--code-fg);
+    padding:20px;border-radius:0 0 3px 3px;overflow-x:auto;border:1px solid #000;
+    font-family:"IBM Plex Mono",monospace;font-size:13px;line-height:1.55;
+    tab-size:2;
+  }
+  code.inline{
+    font-family:"IBM Plex Mono",monospace;font-size:.88em;
+    background:var(--paper-2);border:1px solid var(--rule);border-radius:2px;
+    padding:1px 5px;color:var(--accent);
+  }
+  /* ---------- Wiring SVG ---------- */
+  .diagram{
+    background:var(--paper-2);border:1px solid var(--rule-strong);
+    border-radius:3px;padding:14px;margin:22px 0;
+  }
+  .diagram svg{width:100%;height:auto;display:block}
+  /* ---------- spec list ---------- */
+  ul.tight{margin:0 0 16px;padding-left:22px}
+  ul.tight li{margin:6px 0}
+  .legend{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-soft);display:flex;gap:18px;flex-wrap:wrap;margin-top:10px}
+  .legend span{display:flex;align-items:center;gap:7px}
+  .swatch{width:16px;height:4px;border-radius:2px;display:inline-block}
+  footer{
+    margin-top:40px;padding-top:24px;border-top:1px solid var(--rule-strong);
+    font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-soft);
+  }
+  @media (max-width:560px){
+    .flow{flex-direction:column}
+    .arrow{transform:rotate(90deg);flex-basis:24px}
+  }
+</style>
+</head>
+<body>
+
+<header class="mast">
+  <div class="inner">
+    <p class="kicker">Project Reference · BLE Environment Sensor</p>
+    <h1>XIAO nRF52840 + BME280<br><span class="lo">BTHome v2 weather beacon</span></h1>
+    <p class="sub">A coin-of-the-realm low-power sensor: wake, sample temperature / humidity / pressure, shout one BLE advertisement, sleep. Bridged to MQTT by OpenMQTTGateway. Engineered to outlive its own batteries' shelf life.</p>
+    <div class="chips">
+      <span class="chip"><b>MCU</b> Seeed XIAO nRF52840</span>
+      <span class="chip"><b>SENSOR</b> BME280 (I²C)</span>
+      <span class="chip"><b>POWER</b> 2× AAA Li, regulator path</span>
+      <span class="chip"><b>RADIO</b> BLE adv · BTHome v2</span>
+      <span class="chip"><b>STACK</b> Arduino (Adafruit nRF52)</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ============ 01 OVERVIEW ============ -->
+  <section>
+    <h2><span class="num">01</span>Overview &amp; Goal</h2>
+    <p class="lede">What this thing is, and the one number that defines success.</p>
+
+    <p>This is a battery-powered indoor/outdoor environment sensor. On a fixed schedule (default <strong>15 minutes</strong>) the nRF52840 wakes from deep sleep, takes a single forced-mode reading from the BME280, packs the values into a <strong>BTHome v2</strong> service-data advertisement, transmits a brief burst on the three BLE advertising channels, and goes back to sleep. It never opens a connection — it is a pure beacon.</p>
+
+    <p>A separate <strong>OpenMQTTGateway</strong> node (ESP32 within BLE range) is permanently listening. It decodes the BTHome payload and republishes the readings to your MQTT broker, where Home Assistant or any other consumer can pick them up.</p>
+
+    <div class="flow">
+      <div class="node"><div class="n-t">BME280</div><div class="n-s">T · RH · P</div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="n-t">XIAO nRF52840</div><div class="n-s">BTHome v2 adv</div></div>
+      <div class="arrow">))</div>
+      <div class="node"><div class="n-t">OpenMQTTGateway</div><div class="n-s">BLE → decode</div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="n-t">MQTT Broker</div><div class="n-s">Home Assistant</div></div>
+    </div>
+
+    <h3>The goal, stated as a target</h3>
+    <p>The success criterion is deliberately simple: <strong>device runtime must exceed the batteries' own shelf life.</strong> In other words, the sensor should sip so little that the cells age out (self-discharge / shelf rating) before the firmware can ever drain them. As the battery section shows, with two firmware tweaks this is met with enormous margin — the limiting factor stops being your design and becomes the chemistry on the label.</p>
+
+    <div class="callout info">
+      <span class="tag">Design verdict</span>
+      <p><strong>No board surgery needed.</strong> The two consequential power optimizations are pure firmware. Desoldering the tiny XIAO would add risk for zero practical benefit, because runtime is already capped by battery shelf life, not by current draw.</p>
+    </div>
+  </section>
+
+  <hr class="hr">
+
+  <!-- ============ 02 BOM ============ -->
+  <section>
+    <h2><span class="num">02</span>Bill of Materials</h2>
+    <p class="lede">Five line items. Nothing exotic.</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Item</th><th>Spec / Note</th><th>Qty</th></tr></thead>
+        <tbody>
+          <tr><td>Seeed XIAO nRF52840</td><td>The <em>non-Sense</em> variant is preferred (no IMU/mic to leak current). Either works.</td><td class="mono">1</td></tr>
+          <tr><td>BME280 breakout</td><td>I²C version. Confirm the address (0x76 or 0x77) — see wiring.</td><td class="mono">1</td></tr>
+          <tr class="hl"><td>Energizer Ultimate Lithium AAA (L92)</td><td>~1200 mAh, ~3.0 V in series, ~20-yr shelf life, excellent in cold. <strong>Recommended chemistry.</strong></td><td class="mono">2</td></tr>
+          <tr><td>2× AAA holder</td><td>Series output to BAT± pads. Switched holder is a nice-to-have.</td><td class="mono">1</td></tr>
+          <tr><td>Hook-up wire / enclosure</td><td>6 short wires; vented enclosure if outdoors (keep BME280 out of direct sun/rain).</td><td class="mono">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout">
+      <span class="tag">Why lithium, not your NiMH</span>
+      <p>Across a multi-year horizon, NiMH self-discharge becomes the dominant loss — you'd be recharging cells the firmware never came close to draining, which defeats "set and forget." NiMH also starts at only 2.4 V and sags toward the nRF's 1.7 V floor sooner. Lithium AAA holds a flat ~3.0 V, won't leak like alkaline, and its shelf rating <em>is</em> your runtime ceiling here. Keep the rechargeables for something that cycles often.</p>
+    </div>
+  </section>
+
+  <hr class="hr">
+
+  <!-- ============ 03 WIRING ============ -->
+  <section>
+    <h2><span class="num">03</span>Pinout &amp; Wiring</h2>
+    <p class="lede">Six connections. I²C on the default pins, power via the battery pads.</p>
+
+    <h3>Connection table</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>BME280 pin</th><th>XIAO pin</th><th>nRF port</th><th>Function</th></tr></thead>
+        <tbody>
+          <tr><td>VCC / VIN</td><td><span class="pin">3V3</span></td><td class="mono">—</td><td>3.3 V rail (regulated)</td></tr>
+          <tr><td>GND</td><td><span class="pin">GND</span></td><td class="mono">—</td><td>Ground</td></tr>
+          <tr class="hl"><td>SDA / SDI</td><td><span class="pin">D9</span></td><td class="mono">P1.14</td><td>I²C data — remapped (see note)</td></tr>
+          <tr class="hl"><td>SCL / SCK</td><td><span class="pin">D10</span></td><td class="mono">P1.15</td><td>I²C clock — remapped (see note)</td></tr>
+          <tr><td>SDO / ADDR</td><td colspan="2">tie to GND → <span class="mono">0x76</span> · tie to VCC → <span class="mono">0x77</span></td><td>Sets I²C address</td></tr>
+          <tr><td>CSB</td><td colspan="2">tie to VCC (selects I²C mode on some boards)</td><td>Interface select</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Battery</th><th>XIAO pad</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td>Holder (+)</td><td><span class="pin">BAT+</span></td><td>Underside pad. Feeds the onboard LDO — safe up to fresh-lithium voltage.</td></tr>
+          <tr><td>Holder (−)</td><td><span class="pin">BAT−</span></td><td>Ground / battery negative pad.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout info">
+      <span class="tag">Power-path assumption</span>
+      <p>This reference assumes <strong>lithium AAA cells fed through the BAT pads and the onboard LDO</strong>. The regulator's ~1–2 µA quiescent draw is negligible here and, in exchange, it clamps fresh lithium (~3.6 V open-circuit) down to a safe 3.3 V. <strong>Switching to NiMH would change the design:</strong> you'd power the <code class="inline">3V3</code> pin directly, skip the LDO and the VBAT divider entirely, and read the battery from the chip's internal VDD channel instead.</p>
+    </div>
+
+    <div class="callout info">
+      <span class="tag">Choosing the I²C pins</span>
+      <p>On the nRF52840 the I²C peripheral can be routed to <strong>any GPIO</strong> — the pins aren't fixed in hardware. The Arduino core defaults <code class="inline">Wire</code> to <strong>D4 (P0.04) / D5 (P0.05)</strong>, which work with a bare <code class="inline">Wire.begin()</code>. Any other pair — like the <strong>D9 / D10</strong> used here, chosen because they sit right beside 3V3 and GND for tidy wiring — must be declared first with <code class="inline">Wire.setPins(SDA, SCL)</code> before <code class="inline">Wire.begin()</code>. Both sensors ride the same <code class="inline">Wire</code> bus, so that one remap covers them together.</p>
+    </div>
+
+    <h3>Wiring diagram</h3>
+    <div class="diagram">
+      <svg viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg" font-family="IBM Plex Mono, monospace">
+        <!-- defs -->
+        <defs>
+          <style>
+            .lbl{font-size:12px;fill:#1c1a17;font-weight:600}
+            .pinlbl{font-size:11px;fill:#544f45}
+            .title{font-size:13px;fill:#1c1a17;font-weight:700;font-family:'Chakra Petch',sans-serif}
+            .pad{fill:#efe9db;stroke:#bcb29a;stroke-width:1.2}
+          </style>
+        </defs>
+
+        <!-- Battery holder -->
+        <rect x="20" y="120" width="150" height="120" rx="6" fill="#efe9db" stroke="#bcb29a" stroke-width="1.5"/>
+        <text x="95" y="112" text-anchor="middle" class="title">2× AAA Lithium</text>
+        <rect x="38" y="150" width="50" height="60" rx="4" fill="#e3dcc9" stroke="#bcb29a"/>
+        <rect x="102" y="150" width="50" height="60" rx="4" fill="#e3dcc9" stroke="#bcb29a"/>
+        <text x="63" y="186" text-anchor="middle" class="pinlbl">＋−</text>
+        <text x="127" y="186" text-anchor="middle" class="pinlbl">＋−</text>
+        <circle cx="170" cy="150" r="4" fill="#c2451d"/><text x="178" y="146" class="pinlbl">＋</text>
+        <circle cx="170" cy="210" r="4" fill="#1c1a17"/><text x="178" y="226" class="pinlbl">−</text>
+
+        <!-- XIAO board -->
+        <rect x="300" y="70" width="170" height="220" rx="8" fill="#26221c" stroke="#1c1a17" stroke-width="2"/>
+        <text x="385" y="60" text-anchor="middle" class="title">XIAO nRF52840</text>
+        <rect x="330" y="78" width="110" height="26" rx="3" fill="#3a352d"/>
+        <text x="385" y="96" text-anchor="middle" font-size="11" fill="#e7e1d2">BLE antenna</text>
+
+        <!-- left pads (to BME) -->
+        <g>
+          <rect x="288" y="130" width="24" height="16" class="pad"/><text x="320" y="142" class="pinlbl">3V3</text>
+          <rect x="288" y="160" width="24" height="16" class="pad"/><text x="320" y="172" class="pinlbl">GND</text>
+          <rect x="288" y="190" width="24" height="16" class="pad"/><text x="320" y="202" class="pinlbl">D9 / SDA</text>
+          <rect x="288" y="220" width="24" height="16" class="pad"/><text x="320" y="232" class="pinlbl">D10 / SCL</text>
+        </g>
+        <!-- bottom BAT pads -->
+        <rect x="330" y="288" width="24" height="16" class="pad"/><text x="342" y="322" text-anchor="middle" class="pinlbl">BAT+</text>
+        <rect x="416" y="288" width="24" height="16" class="pad"/><text x="428" y="322" text-anchor="middle" class="pinlbl">BAT−</text>
+
+        <!-- BME280 -->
+        <rect x="600" y="120" width="140" height="120" rx="6" fill="#efe9db" stroke="#bcb29a" stroke-width="1.5"/>
+        <text x="670" y="112" text-anchor="middle" class="title">BME280</text>
+        <rect x="640" y="150" width="60" height="60" rx="4" fill="#3a352d"/>
+        <text x="670" y="185" text-anchor="middle" font-size="10" fill="#e7e1d2">T·RH·P</text>
+        <g>
+          <rect x="588" y="130" width="24" height="16" class="pad"/><text x="556" y="142" text-anchor="end" class="pinlbl">VCC</text>
+          <rect x="588" y="160" width="24" height="16" class="pad"/><text x="556" y="172" text-anchor="end" class="pinlbl">GND</text>
+          <rect x="588" y="190" width="24" height="16" class="pad"/><text x="556" y="202" text-anchor="end" class="pinlbl">SDA</text>
+          <rect x="588" y="220" width="24" height="16" class="pad"/><text x="556" y="232" text-anchor="end" class="pinlbl">SCL</text>
+        </g>
+
+        <!-- wires: XIAO <-> BME -->
+        <path d="M312 138 H588" fill="none" stroke="#c2451d" stroke-width="2.4"/>
+        <path d="M312 168 H588" fill="none" stroke="#1c1a17" stroke-width="2.4"/>
+        <path d="M312 198 H588" fill="none" stroke="#1f6f5c" stroke-width="2.4"/>
+        <path d="M312 228 H588" fill="none" stroke="#2f86c9" stroke-width="2.4"/>
+
+        <!-- wires: battery -> XIAO BAT pads -->
+        <path d="M170 150 H210 V335 H342 V304" fill="none" stroke="#c2451d" stroke-width="2.4"/>
+        <path d="M170 210 H230 V348 H428 V304" fill="none" stroke="#1c1a17" stroke-width="2.4"/>
+      </svg>
+      <div class="legend">
+        <span><i class="swatch" style="background:#c2451d"></i>3V3 / V+</span>
+        <span><i class="swatch" style="background:#1c1a17"></i>GND</span>
+        <span><i class="swatch" style="background:#1f6f5c"></i>SDA</span>
+        <span><i class="swatch" style="background:#2f86c9"></i>SCL</span>
+      </div>
+    </div>
+
+    <div class="callout">
+      <span class="tag">Safety — read before first flash</span>
+      <p><strong>Remove the AAA cells before plugging in USB.</strong> The XIAO's onboard BQ25101 charger will try to charge whatever sits on the BAT pads when USB is present. Pushing charge current into primary lithium (or alkaline) cells risks venting, leakage, or rupture. Flash with batteries out; install them after.</p>
+    </div>
+    <p>Most BME280 breakouts include I²C pull-ups (4.7 k–10 k). If you use a bare chip, add pull-ups from SDA and SCL to 3V3. The BME280 stays on the 3V3 rail through sleep, drawing ~0.1 µA in standby — negligible, so there's no need to gate its power.</p>
+  </section>
+
+  <hr class="hr">
+
+  <!-- ============ 04 BATTERY ============ -->
+  <section>
+    <h2><span class="num">04</span>Battery Estimation</h2>
+    <p class="lede">Why the answer is "years and years" — and where the real ceiling sits.</p>
+
+    <h3>The key insight</h3>
+    <p>At a 10–15 minute reporting interval, the active work (sensor read + a few advertisement packets) is <strong>vanishingly small</strong> compared to the time spent asleep. The whole budget is therefore dominated by <strong>sleep current</strong>. Get that down and runtime balloons.</p>
+
+    <div class="card mono" style="font-size:.9rem">
+      <div>average current ≈ I<sub>sleep</sub> + (Q<sub>wake</sub> × wakes/day) / 86400 s</div>
+      <div style="margin-top:8px;color:var(--ink-soft)">runtime ≈ usable capacity (mAh) / average current (mA)</div>
+    </div>
+
+    <h3>Assumptions</h3>
+    <ul class="tight">
+      <li>Interval <strong>15 min</strong> → 96 wakes/day (10 min → 144; the difference is &lt; 1 year, so pick by data freshness, not battery).</li>
+      <li>Charge per wake <strong>≈ 0.5 mA·s</strong> — a conservative ~300 ms advertising burst plus a forced-mode BME280 read. That works out to only ~0.5 µA of <em>average</em> contribution.</li>
+      <li>Usable capacity: <strong>lithium AAA ≈ 1200 mAh</strong>, NiMH AAA ≈ 800 mAh.</li>
+      <li>Sleep current per configuration is the variable that actually matters (below).</li>
+    </ul>
+
+    <h3>Sleep-current scenarios &amp; resulting life</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Firmware configuration</th><th>Sleep current</th><th>Avg current (15 min)</th><th>Life · 2× Li AAA</th></tr></thead>
+        <tbody>
+          <tr><td>Naive (QSPI flash left awake, divider active)</td><td class="mono">~20 µA</td><td class="mono">~20.6 µA</td><td class="mono">~6.6 years</td></tr>
+          <tr class="hl"><td><strong>Tuned</strong> — flash deep-power-down + divider disconnected</td><td class="mono">~5 µA</td><td class="mono">~5.6 µA</td><td class="mono">~24 yrs → capped ≈ 20 yr</td></tr>
+          <tr><td>Zephyr System-OFF style (for reference only)</td><td class="mono">~3 µA</td><td class="mono">~3.4 µA</td><td class="mono">~40 yrs → capped ≈ 20 yr</td></tr>
+        </tbody>
+      </table>
+      <caption>"Capped ≈ 20 yr" = the Energizer Ultimate Lithium shelf rating becomes the limit; consumption alone would run far longer. NiMH (800 mAh) gives ~16 yr on consumption at 5.6 µA, but self-discharge realistically limits it to ~2–3 yr — which is why lithium wins.</caption>
+    </div>
+
+    <div class="callout info">
+      <span class="tag">What this means for your decisions</span>
+      <p><strong>Stay on Arduino.</strong> Its achievable ~5 µA already pushes runtime past the battery's shelf life, so Zephyr's extra ~2 µA delivers no real-world gain. <strong>Don't desolder.</strong> Even the <em>untuned</em> ~20 µA case clears "several years." The only things you must do are two lines of firmware — covered next.</p>
+    </div>
+  </section>
+
+  <hr class="hr">
+
+  <!-- ============ 05 FIRMWARE ============ -->
+  <section>
+    <h2><span class="num">05</span>Firmware — Getting Started</h2>
+    <p class="lede">A complete Arduino starter sketch, plus the toolchain setup around it.</p>
+
+    <h3>Toolchain</h3>
+    <ul class="tight">
+      <li><strong>Board support:</strong> install the <em>Adafruit nRF52</em> core, then select <code class="inline">Seeed XIAO nRF52840</code> (the Bluefruit-based core, <em>not</em> the mbed core — Bluefruit gives the low-power advertising API used here).</li>
+      <li><strong>Libraries</strong> (Library Manager): <code class="inline">Adafruit BME280 Library</code>, <code class="inline">Adafruit Unified Sensor</code>, <code class="inline">Adafruit SPIFlash</code> (for QSPI deep-power-down).</li>
+      <li><strong>Upload:</strong> double-tap RESET to enter the UF2 bootloader if the port doesn't appear. Batteries out while USB is connected.</li>
+    </ul>
+
+    <h3>The two optimizations that matter</h3>
+    <ol class="tight">
+      <li><strong>QSPI flash → deep power-down</strong> (<code class="inline">flashTransport.runCommand(0xB9)</code>). This alone takes you from ~20 µA toward ~5 µA.</li>
+      <li><strong>Keep the VBAT divider disconnected</strong> (drive <code class="inline">VBAT_ENABLE</code> HIGH; only pull it LOW for the few ms you read battery voltage). Saves the divider's ~2.3 µA.</li>
+    </ol>
+
+    <div class="codehead">
+      <span class="fname">xiao_bme280_bthome.ino</span>
+      <button class="copybtn" id="copy">COPY</button>
+    </div>
+    <pre class="code"><code id="fw-code"></code></pre>
+
+    <div class="callout info">
+      <span class="tag">Notes &amp; calibration</span>
+      <p>The pin macros <code class="inline">PIN_VBAT</code>, <code class="inline">VBAT_ENABLE</code>, and the LED names are defined by the Seeed XIAO variant in the Adafruit core; if a name doesn't resolve, check your installed core version. The battery divider ratio (<code class="inline">VBAT_DIVIDER</code>) and reference should be checked against a multimeter once — the value is a good starting point, not gospel. Battery <em>percent</em> from lithium/NiMH is approximate (flat discharge curve), so the raw voltage object (0x0C) is the more honest reading in Home Assistant.</p>
+    </div>
+  </section>
+
+  <hr class="hr">
+
+  <!-- ============ 06 BTHOME ============ -->
+  <section>
+    <h2><span class="num">06</span>BTHome v2 Payload</h2>
+    <p class="lede">Exactly what goes on the air — service UUID 0xFCD2, unencrypted.</p>
+    <p>The advertisement carries one Service-Data field (AD type <code class="inline">0x16</code>) with 16-bit UUID <code class="inline">0xFCD2</code>. The first byte (<code class="inline">0x40</code>) flags BTHome v2, unencrypted, non-trigger. Then come measurement objects in ascending ID order, each value little-endian.</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Object ID</th><th>Measurement</th><th>Type</th><th>Factor / Unit</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">0x01</td><td>Battery</td><td class="mono">uint8</td><td>1 · %</td></tr>
+          <tr><td class="mono">0x02</td><td>Temperature</td><td class="mono">sint16</td><td>0.01 · °C</td></tr>
+          <tr><td class="mono">0x03</td><td>Humidity</td><td class="mono">uint16</td><td>0.01 · %</td></tr>
+          <tr><td class="mono">0x04</td><td>Pressure</td><td class="mono">uint24</td><td>0.01 · hPa</td></tr>
+          <tr><td class="mono">0x0C</td><td>Voltage</td><td class="mono">uint16</td><td>0.001 · V</td></tr>
+        </tbody>
+      </table>
+      <caption>Total advertisement ≈ 23 bytes incl. flags — comfortably under the 31-byte legacy advertising limit.</caption>
+    </div>
+  </section>
+
+  <hr class="hr">
+
+  <!-- ============ 07 COMMISSIONING ============ -->
+  <section>
+    <h2><span class="num">07</span>Commissioning &amp; OpenMQTTGateway</h2>
+    <p class="lede">From first power-up to data in your broker.</p>
+    <ol class="tight">
+      <li><strong>Flash</strong> the sketch (batteries removed). Open the Serial Monitor only if you added debug prints — leave them out of the deployed build to keep wake time short.</li>
+      <li><strong>Insert the lithium AAAs.</strong> The device begins its wake/advertise/sleep cycle immediately.</li>
+      <li><strong>OpenMQTTGateway</strong> with the BLE/BTHome decoder enabled will see the 0xFCD2 beacon and publish to a topic such as <code class="inline">home/OMG/BTtoMQTT/&lt;MAC&gt;</code>. No pairing or whitelist is needed for an unencrypted BTHome beacon.</li>
+      <li><strong>Home Assistant</strong> picks up the readings via the MQTT integration (and can auto-discover BTHome through OMG). Confirm temperature, humidity, pressure, battery % and voltage all arrive.</li>
+      <li><strong>Range check:</strong> keep the sensor within solid BLE range of the gateway. If it's marginal, raise <code class="inline">TX_POWER_DBM</code> a step — the energy cost is still negligible at this duty cycle.</li>
+    </ol>
+
+    <h3>Optimization checklist (firmware-only — no hardware risk)</h3>
+    <ul class="tight">
+      <li>☐ QSPI flash deep-power-down sent in <code class="inline">setup()</code></li>
+      <li>☐ <code class="inline">VBAT_ENABLE</code> held HIGH except during the battery read</li>
+      <li>☐ All three onboard LEDs driven HIGH (off)</li>
+      <li>☐ BME280 in <strong>forced</strong> mode (sleeps between reads)</li>
+      <li>☐ Advertising burst short (≈ 300 ms) then explicitly stopped</li>
+      <li>☐ No <code class="inline">Serial</code> / debug prints in the deployed build</li>
+    </ul>
+  </section>
+
+  <hr class="hr">
+
+  <!-- ============ 08 UPGRADE: LIGHT ============ -->
+  <section>
+    <h2><span class="num">08</span>Upgrade A — Ambient Light <span class="opt">Optional · BH1750</span></h2>
+    <p class="lede">Rough sunshine tracking that piggybacks on the existing I²C bus.</p>
+
+    <p>The BH1750 is a digital I²C lux sensor. It hangs off the <em>same</em> SDA/SCL lines as the BME280 (different address — no conflict), runs on the 3.3 V rail, and in one-shot mode powers itself down to ~0.01 µA between reads. Electrically it's a clean fit: two extra wires onto the shared bus, no new constraints.</p>
+
+    <div class="callout info">
+      <span class="tag">Compatibility — clean fit</span>
+      <p>The <strong>sensor respects every design assumption.</strong> It shares the I²C bus, sips ~0.01 µA between reads, and adds no measurable load — the device keeps its clean 15-minute-only wake cadence. You report instantaneous lux each cycle and let your broker-side software threshold and sum it into sun-hours. The one thing to get right is the lux threshold that defines "sunny" — covered below.</p>
+    </div>
+
+    <h3>Wiring — taps the shared I²C bus</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>BH1750 pin</th><th>XIAO pin</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td>VCC</td><td><span class="pin">3V3</span></td><td>Same rail as BME280</td></tr>
+          <tr><td>GND</td><td><span class="pin">GND</span></td><td>Common ground</td></tr>
+          <tr><td>SDA</td><td><span class="pin">D9</span></td><td>Shared with BME280</td></tr>
+          <tr><td>SCL</td><td><span class="pin">D10</span></td><td>Shared with BME280</td></tr>
+          <tr><td>ADDR</td><td colspan="2">→ GND = <span class="mono">0x23</span> · → VCC = <span class="mono">0x5C</span> (BME280 stays 0x76/0x77)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>BTHome objects added</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Object ID</th><th>Measurement</th><th>Type</th><th>Factor / Unit</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">0x05</td><td>Illuminance</td><td class="mono">uint24</td><td>0.01 · lux</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="codehead">
+      <span class="fname">upgrade_bh1750.ino — drop-in additions</span>
+      <button class="copybtn" id="copy-bh">COPY</button>
+    </div>
+    <pre class="code"><code id="bh-code"></code></pre>
+
+    <h3>Defining "sunny" — the lux threshold</h3>
+    <p>This is the real accuracy knob — it matters more than your sampling interval. The meteorological benchmark (the WMO standard behind official "sunshine hours") counts sunshine when the <strong>direct solar beam exceeds 120 W/m²</strong>, measured perpendicular to the sun with a pyrheliometer. A flat BH1750 can't reproduce that: it reads <em>global horizontal illuminance</em> in lux — direct sun <em>plus</em> diffuse skylight — so it is inherently a proxy. The job is to pick a lux value that best separates "direct sun on the bed" from "bright cloud," then calibrate it.</p>
+
+    <p>Typical horizontal illuminance, for reference:</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Sky condition</th><th>Approx. illuminance</th></tr></thead>
+        <tbody>
+          <tr class="hl"><td>Direct sun (full daylight + beam)</td><td class="mono">32,000 – 100,000+ lux</td></tr>
+          <tr><td>Bright; sun behind thin cloud / open shade under clear sky</td><td class="mono">10,000 – 25,000 lux</td></tr>
+          <tr><td>Typical overcast, midday</td><td class="mono">1,000 – 10,000 lux</td></tr>
+          <tr><td>Heavy / dark overcast</td><td class="mono">&lt; 1,000 lux</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>A sensible <strong>starting threshold is ~30,000 lux</strong> — it sits in the gap between bright overcast (~25 k) and direct sun (~32 k). Raise it toward 40–50 k if bright cloud gets falsely counted as sun; lower it toward ~20 k if low-angle morning, evening, or winter sun is being missed. In an Option-A build the threshold lives in your broker-side summing software (the device just ships raw lux), so you can re-tune it against recorded data without ever reflashing.</p>
+
+    <div class="callout">
+      <span class="tag">Germany / high-latitude caveat</span>
+      <p>Because the sensor lies flat, absolute lux scales with sun elevation — the same "sun is out" condition reads far brighter at summer noon than on a low winter morning. For a garden bed that's fine: the growing-season sun (spring–autumn, higher arc) is what decides "full vs part sun," and ~30 k captures it well. Deep-winter low sun may be under-counted, which doesn't change the seasonal verdict. Spend ten minutes calibrating against two or three hand-observed days for your exact spot and orientation.</p>
+    </div>
+
+    <div class="callout info">
+      <span class="tag">BH1750 saturation — keep the threshold below it</span>
+      <p>In its standard high-resolution mode the BH1750 tops out near <strong>~54,000 lux</strong> (a 16-bit register, ~65,535 raw ÷ 1.2). Bright summer direct sun (70,000–100,000 lux) will <em>saturate</em> it. For a boolean "is it sunny?" test that's harmless — a clipped reading just means "well above threshold" — but it carries two consequences: keep the threshold comfortably under ~50 k so it stays reachable, and don't trust the absolute lux number in full sun. If you do want true lux in full sun, shorten the sensor's integration time (MTreg) to push the ceiling past ~100 k, trading away some low-light resolution.</p>
+    </div>
+  </section>
+
+  <hr class="hr">
+
+  <!-- ============ 09 UPGRADE: SOIL ============ -->
+  <section>
+    <h2><span class="num">09</span>Upgrade B — Soil Moisture <span class="opt">Optional · Capacitive</span></h2>
+    <p class="lede">Feasible — but only if you power-gate it. Wired naively, it breaks the project.</p>
+
+    <div class="callout">
+      <span class="tag">Design conflict — read this first</span>
+      <p>The common capacitive sensors are built around a 555 oscillator that draws <strong>~5 mA continuously whenever powered</strong>. Tied straight to 3V3 that's ~1000× your sleep budget — the cells would be flat in roughly a week, breaking the core requirement outright. <strong>The fix:</strong> power the sensor from a GPIO (or a small MOSFET / load switch) and energize it only for the ~300 ms a reading takes. Gated that way it adds ~1.5 mA·s per cycle (~1.7 µA average) and the multi-year, shelf-life-capped runtime survives intact.</p>
+    </div>
+
+    <p>This sensor is analog, so it also costs one ADC pin plus a calibration step (dry-air vs. fully-submerged raw values). Choose a sensor rated for <strong>3.3 V</strong> operation — several on the market are designed for 5 V and read poorly on our rail.</p>
+
+    <h3>Wiring</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Sensor pin</th><th>XIAO pin</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td>AOUT</td><td><span class="pin">A0 / D0</span> (P0.02)</td><td>Analog input</td></tr>
+          <tr class="hl"><td>VCC</td><td><span class="pin">D1</span> (P0.03)</td><td><strong>Power-control pin</strong> — drive HIGH to read, LOW to cut. Use a MOSFET/load switch for clean 5 mA switching.</td></tr>
+          <tr><td>GND</td><td><span class="pin">GND</span></td><td>Common ground</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>BTHome object added</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Object ID</th><th>Measurement</th><th>Type</th><th>Factor / Unit</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">0x14</td><td>Moisture</td><td class="mono">uint16</td><td>0.01 · %</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="codehead">
+      <span class="fname">upgrade_soil.ino — drop-in additions</span>
+      <button class="copybtn" id="copy-soil">COPY</button>
+    </div>
+    <pre class="code"><code id="soil-code"></code></pre>
+
+    <div class="callout info">
+      <span class="tag">Calibration &amp; accuracy</span>
+      <p>Capacitive output drifts slightly with supply voltage. While the LDO holds 3.3 V (most of the battery's life) readings are stable; near end-of-life, as the rail follows the cells down, expect some drift. For best results read ratiometrically (ADC reference = VDD) or sample VDD alongside and normalize. For "is the plant thirsty" purposes, a fixed reference plus a one-time dry/wet calibration is plenty.</p>
+    </div>
+
+    <div class="callout info">
+      <span class="tag">Mixing upgrades → a fourth build</span>
+      <p>The two upgrades don't collide: light lives on I²C (<code class="inline">D9/D10</code>), soil on an analog pin (<code class="inline">A0</code>) plus a power pin (<code class="inline">D1</code>). All three variants — base, +light, +soil — share one firmware base, so you can also fit both at once for a fully-loaded node.</p>
+    </div>
+  </section>
+
+  <hr class="hr">
+
+  <footer>
+    <div>XIAO nRF52840 + BME280 · BTHome v2 · OpenMQTTGateway → MQTT</div>
+    <div style="margin-top:6px">Battery figures are first-order estimates; measure your own sleep current with a µA meter (or a current-ranging tool) to confirm. Sleep-current behaviour of the XIAO is well documented by the Seeed wiki and community measurements (~5 µA tuned, ~20 µA untuned).</div>
+  </footer>
+
+</div>
+
+<!-- firmware stored as raw text, injected to avoid HTML-escaping pitfalls -->
+<script type="text/plain" id="fw-src">
+/*
+ * XIAO nRF52840 + BME280  ->  BTHome v2 BLE beacon
+ * Wake -> read sensor -> broadcast unencrypted BTHome v2 adv -> sleep.
+ * Target: OpenMQTTGateway -> MQTT -> Home Assistant.
+ *
+ * Board : Seeed XIAO nRF52840  (Adafruit nRF52 / Bluefruit core)
+ * Sensor: BME280 over I2C  (SDA = D9/P1.14, SCL = D10/P1.15)
+ * Power : 2x AAA lithium on the BAT+/BAT- pads
+ *
+ * Libraries: Adafruit BME280, Adafruit Unified Sensor, Adafruit SPIFlash
+ */
+
+#include <bluefruit.h>
+#include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BME280.h>
+#include <Adafruit_SPIFlash.h>
+
+// ---------------- USER CONFIG ----------------
+#define REPORT_INTERVAL_MS   (15UL * 60UL * 1000UL)   // 15 minutes
+#define ADV_BURST_MS         300         // broadcast window per cycle
+#define BME280_I2C_ADDR      0x76        // 0x76 (generic) or 0x77 (Adafruit)
+#define TX_POWER_DBM         0           // 0 dBm; raise a step only if range is marginal
+
+// Battery mapping (2x lithium AAA: ~3.0 V full in use, ~2.2 V empty)
+#define VBAT_FULL_MV         3000
+#define VBAT_EMPTY_MV        2200
+#define VBAT_DIVIDER         2.961f      // XIAO onboard divider ratio - CALIBRATE
+// ---------------------------------------------
+
+Adafruit_BME280 bme;
+Adafruit_FlashTransport_QSPI flashTransport;
+
+uint16_t readBatteryMillivolts() {
+  // Connect the divider only for the read, then disconnect to save ~2.3 uA.
+  pinMode(VBAT_ENABLE, OUTPUT);
+  digitalWrite(VBAT_ENABLE, LOW);      // LOW = divider engaged
+  delay(5);
+  analogReadResolution(12);
+  analogReference(AR_INTERNAL_2_4);    // 2.4 V full-scale reference
+  uint32_t raw = 0;
+  for (int i = 0; i < 8; i++) { raw += analogRead(PIN_VBAT); delay(1); }
+  raw /= 8;
+  digitalWrite(VBAT_ENABLE, HIGH);     // HIGH = divider disconnected
+  float adc_mv = (raw * 2400.0f) / 4096.0f;
+  return (uint16_t)(adc_mv * VBAT_DIVIDER);
+}
+
+uint8_t batteryPercent(uint16_t mv) {
+  if (mv >= VBAT_FULL_MV)  return 100;
+  if (mv <= VBAT_EMPTY_MV) return 0;
+  return (uint8_t)(100UL * (mv - VBAT_EMPTY_MV) / (VBAT_FULL_MV - VBAT_EMPTY_MV));
+}
+
+void buildAndBroadcast() {
+  // ---- read sensor (forced mode: sensor sleeps between reads) ----
+  bme.takeForcedMeasurement();
+  float tC   = bme.readTemperature();          // degC
+  float rh   = bme.readHumidity();             // %
+  float pHpa = bme.readPressure() / 100.0f;    // hPa
+
+  uint16_t vbat = readBatteryMillivolts();
+  uint8_t  pct  = batteryPercent(vbat);
+
+  int16_t  t = (int16_t) lround(tC   * 100.0);   // 0x02  sint16 x0.01
+  uint16_t h = (uint16_t)lround(rh   * 100.0);   // 0x03  uint16 x0.01
+  uint32_t p = (uint32_t)lround(pHpa * 100.0);   // 0x04  uint24 x0.01
+
+  // ---- BTHome v2 service data (UUID 0xFCD2, unencrypted) ----
+  uint8_t sd[20];
+  uint8_t n = 0;
+  sd[n++] = 0xD2; sd[n++] = 0xFC;                       // UUID 0xFCD2 (LE)
+  sd[n++] = 0x40;                                       // BTHome v2, no encryption
+  sd[n++] = 0x01; sd[n++] = pct;                        // battery %
+  sd[n++] = 0x02; sd[n++] = t & 0xFF; sd[n++] = (t >> 8) & 0xFF;        // temp
+  sd[n++] = 0x03; sd[n++] = h & 0xFF; sd[n++] = (h >> 8) & 0xFF;        // humidity
+  sd[n++] = 0x04; sd[n++] = p & 0xFF; sd[n++] = (p >> 8) & 0xFF;
+                  sd[n++] = (p >> 16) & 0xFF;                           // pressure
+  sd[n++] = 0x0C; sd[n++] = vbat & 0xFF; sd[n++] = (vbat >> 8) & 0xFF;  // voltage
+
+  // ---- advertise a short burst, then stop ----
+  Bluefruit.Advertising.stop();
+  Bluefruit.Advertising.clearData();
+  Bluefruit.Advertising.addFlags(BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE);
+  Bluefruit.Advertising.addData(0x16 /* Service Data, 16-bit UUID */, sd, n);
+  Bluefruit.Advertising.setInterval(160, 160);   // 100 ms (units of 0.625 ms)
+  Bluefruit.Advertising.start(0);                // 0 = run until we stop it
+  delay(ADV_BURST_MS);
+  Bluefruit.Advertising.stop();
+}
+
+void setup() {
+  // On-board LEDs are active-LOW: drive HIGH = off.
+  pinMode(LED_RED,   OUTPUT); digitalWrite(LED_RED,   HIGH);
+  pinMode(LED_GREEN, OUTPUT); digitalWrite(LED_GREEN, HIGH);
+  pinMode(LED_BLUE,  OUTPUT); digitalWrite(LED_BLUE,  HIGH);
+
+  // POWER STEP 1: put the QSPI flash into deep power-down (~ -15 uA).
+  flashTransport.begin();
+  flashTransport.runCommand(0xB9);   // 0xB9 = Deep Power-Down
+  delay(1);
+  flashTransport.end();
+
+  // POWER STEP 2: keep the battery-voltage divider disconnected by default.
+  pinMode(VBAT_ENABLE, OUTPUT);
+  digitalWrite(VBAT_ENABLE, HIGH);
+
+  // I2C + BME280 in forced mode, no oversampling overkill.
+  // nRF52840 routes I2C to any GPIO; default is D4/D5, so remap to D9/D10 first.
+  Wire.setPins(D9, D10);    // SDA = D9 (P1.14), SCL = D10 (P1.15) -- before begin()
+  Wire.begin();
+  bme.begin(BME280_I2C_ADDR);
+  bme.setSampling(Adafruit_BME280::MODE_FORCED,
+                  Adafruit_BME280::SAMPLING_X1,   // temperature
+                  Adafruit_BME280::SAMPLING_X1,   // pressure
+                  Adafruit_BME280::SAMPLING_X1,   // humidity
+                  Adafruit_BME280::FILTER_OFF);
+
+  // BLE: beacon only, never restart advertising on disconnect.
+  Bluefruit.begin();
+  Bluefruit.setTxPower(TX_POWER_DBM);
+  Bluefruit.setName("XIAO-BME280");
+  Bluefruit.Advertising.restartOnDisconnect(false);
+}
+
+void loop() {
+  buildAndBroadcast();
+  // The Adafruit core's tickless FreeRTOS idle drops the SoC into
+  // low-power System-ON sleep during this long delay (~5 uA when tuned).
+  delay(REPORT_INTERVAL_MS - ADV_BURST_MS);
+}
+</script>
+
+<script type="text/plain" id="bh-src">
+// ===== UPGRADE A: BH1750 ambient-light sensor (shares the I2C bus) =====
+#include <BH1750.h>
+BH1750 lightMeter;            // I2C 0x23 (ADDR->GND). BME280 stays 0x76/0x77.
+
+// In setup(), after Wire.begin():
+//   lightMeter.begin(BH1750::ONE_TIME_HIGH_RES_MODE);
+
+// One-shot read; the sensor auto powers down afterwards (~0.01 uA idle).
+float readLux() {
+  lightMeter.configure(BH1750::ONE_TIME_HIGH_RES_MODE);
+  delay(180);                 // max conversion time
+  return lightMeter.readLightLevel();
+}
+
+// ---- Report instantaneous lux each cycle ----
+// Add inside buildAndBroadcast(), in ascending object-ID order
+// (after 0x04 pressure, before 0x0C voltage):
+//   uint32_t lx = (uint32_t)lround(readLux() * 100.0);   // 0x05 uint24 x0.01 lux
+//   sd[n++] = 0x05; sd[n++] = lx & 0xFF;
+//   sd[n++] = (lx >> 8) & 0xFF; sd[n++] = (lx >> 16) & 0xFF;
+// (Bump the sd[] array size to fit the extra object.)
+//
+// Downstream, your broker-side summing software applies the "sunny" threshold:
+// treat each 15-min sample as sunny / not-sunny, then sum to sun-hours per day.
+// See the lux-threshold note for a sensible starting value (~30,000 lux).
+</script>
+
+<script type="text/plain" id="soil-src">
+// ===== UPGRADE B: capacitive soil-moisture sensor (analog + power gating) =====
+// CRITICAL: power the sensor from a GPIO / MOSFET, NEVER permanently from 3V3.
+// The 555-based boards draw ~5 mA continuously -> would flatten the cells in ~days.
+
+#define SOIL_POWER_PIN   D1      // sensor VCC (or a load-switch / MOSFET gate)
+#define SOIL_ADC_PIN     A0      // sensor AOUT -> analog in
+#define SOIL_DRY_ADC     3000    // raw 12-bit reading in dry air  -- CALIBRATE
+#define SOIL_WET_ADC     1400    // raw 12-bit reading in water     -- CALIBRATE
+
+uint8_t readSoilPercent() {
+  pinMode(SOIL_POWER_PIN, OUTPUT);
+  digitalWrite(SOIL_POWER_PIN, HIGH);   // energize sensor (invert if P-MOSFET high-side)
+  delay(300);                            // let the 555 oscillator settle
+  analogReadResolution(12);
+  analogReference(AR_DEFAULT);           // 0..3.6 V full-scale (covers the sensor swing)
+  uint32_t raw = 0;
+  for (int i = 0; i < 8; i++) { raw += analogRead(SOIL_ADC_PIN); delay(2); }
+  raw /= 8;
+  digitalWrite(SOIL_POWER_PIN, LOW);     // cut power -> 0 draw between reads
+
+  long pct = 100L * (SOIL_DRY_ADC - (long)raw) / (SOIL_DRY_ADC - SOIL_WET_ADC);
+  if (pct < 0)   pct = 0;
+  if (pct > 100) pct = 100;
+  return (uint8_t)pct;
+}
+
+// Add inside buildAndBroadcast(), after 0x0C voltage (ascending order):
+//   uint16_t soil = (uint16_t)lround(readSoilPercent() * 100.0);  // 0x14 uint16 x0.01 %
+//   sd[n++] = 0x14; sd[n++] = soil & 0xFF; sd[n++] = (soil >> 8) & 0xFF;
+// NOTE: readBatteryMillivolts() sets AR_INTERNAL_2_4, so it is fine that this
+// function sets its own reference each call. Enlarge sd[] to fit the new object.
+</script>
+
+<script>
+  function inject(srcId, codeId, btnId) {
+    var src = document.getElementById(srcId).textContent.replace(/^\n/, '');
+    document.getElementById(codeId).textContent = src;
+    if (!btnId) return;
+    var btn = document.getElementById(btnId);
+    btn.addEventListener('click', function () {
+      navigator.clipboard.writeText(src).then(function () {
+        var o = btn.textContent; btn.textContent = 'COPIED';
+        setTimeout(function () { btn.textContent = o; }, 1400);
+      });
+    });
+  }
+  inject('fw-src', 'fw-code', 'copy');
+  inject('bh-src', 'bh-code', 'copy-bh');
+  inject('soil-src', 'soil-code', 'copy-soil');
+</script>
+
+</body>
+</html>
